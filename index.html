@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="refresh" content="5; url=https://discord.gg/">
+    <title>Успешная авторизация</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #1a1a1a;
+            font-family: Arial, sans-serif;
+            color: #fff;
+        }
+        
+        .message {
+            text-align: center;
+            padding: 20px;
+            border: 2px solid #2ecc71;
+            border-radius: 10px;
+            background-color: #2c3e50;
+        }
+
+        a {
+            color: #3498db;
+            text-decoration: none;
+        }
+
+        .countdown {
+            font-size: 0.8em;
+            color: #95a5a6;
+        }
+    </style>
+</head>
+<body>
+    <div class="message">
+        <h1>✅ Авторизация успешна!</h1>
+        <h2>Authorization Successful!</h2>
+        <p>Вы будете перенаправлены в Discord через <span id="count">5</span> секунд...</p>
+        <p>Если перенаправление не сработало, нажмите <a href="https://discord.gg/ваша_ссылка">ссылку</a></p>
+    </div>
+
+    <script>
+        // Обратный отсчёт
+        let seconds = 5;
+        const countElement = document.getElementById('count');
+        
+        const interval = setInterval(() => {
+            seconds--;
+            countElement.textContent = seconds;
+            
+            if (seconds <= 0) {
+                clearInterval(interval);
+            }
+        }, 1000);
+    </script>
+</body>
+</html>
